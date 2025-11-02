@@ -56,5 +56,13 @@ export class SweetsController {
   remove(@Param('id') id: string) {
     return this.sweetsService.remove(id);
   }
-  
+
+  @Post(':id/purchase')
+  @HttpCode(HttpStatus.OK) // Set response code to 200
+  purchase(@Param('id') id: string) {
+    // This endpoint is protected by the class-level AuthGuard
+    // but does not require Admin role
+    return this.sweetsService.purchase(id);
+  }
+
 }

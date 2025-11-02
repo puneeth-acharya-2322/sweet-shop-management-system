@@ -3,7 +3,7 @@
 import { InjectModel } from '@nestjs/mongoose'; // <-- 1. Import
 import { Model } from 'mongoose'; // <-- 2. Import
 import { Sweet } from './schemas/sweet.schema'; // <-- 3. Import
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException,BadRequestException, } from '@nestjs/common';
 import { UpdateSweetDto } from './dto/update-sweet.dto';
 
 @Injectable()
@@ -72,6 +72,21 @@ async remove(id: string): Promise<Sweet> {
     throw new NotFoundException(`Sweet with ID "${id}" not found`);
   }
   return deletedSweet;
+}
+
+async purchase(id: string): Promise<Sweet> {
+  const sweet = await this.sweetModel.findById(id);
+
+  if (!sweet) {
+    throw new NotFoundException(`Sweet with ID "${id}" not found`);
+  }
+
+  if (sweet.quantity <= 0) {
+    throw new BadRequestException(`Sweet "${sweet.name}" is out of stock`);
+  }
+
+  sweet.quantity -= 1;
+  return sweet.save();
 }
 
 }

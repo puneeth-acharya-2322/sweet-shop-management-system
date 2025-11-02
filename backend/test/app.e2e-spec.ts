@@ -233,4 +233,24 @@ describe('Sweets API (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`) // <-- Admin tries to delete
       .expect(200); // This will fail 404
   });
+
+  it('should purchase a sweet and decrease its quantity (POST /api/sweets/:id/purchase)', async () => {
+    // 1. Create a sweet to purchase
+    const createRes = await request(app.getHttpServer())
+      .post('/api/sweets')
+      .set('Authorization', `Bearer ${adminToken}`) // Admin stocks the sweet
+      .send({ name: 'Ladoo', category: 'Classic', price: 3, quantity: 10 });
+
+    const sweetId = createRes.body._id;
+
+    // 2. Purchase the sweet as a regular user
+    return request(app.getHttpServer())
+      .post(`/api/sweets/${sweetId}/purchase`) // The new endpoint
+      .set('Authorization', `Bearer ${userToken}`) // Regular user purchases
+      .expect(200) // Expect "OK"
+      .expect((res) => {
+        expect(res.body).toHaveProperty('name', 'Ladoo');
+        expect(res.body).toHaveProperty('quantity', 9); // Quantity should decrease by 1
+      });
+  });
 });
