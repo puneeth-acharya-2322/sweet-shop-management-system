@@ -192,4 +192,38 @@ it('should search for sweets by name (GET /api/sweets/search)', async () => {
       });
   });
 
+  // --- Our New "Red" Test for PUT /api/sweets/:id ---
+it('should update a sweet (PUT /api/sweets/:id)', async () => {
+  // 1. First, create a sweet to update
+  const newSweet = {
+    name: 'Kaju Katli',
+    category: 'Cashew-based',
+    price: 10.99,
+    quantity: 30,
+  };
+
+  const createRes = await request(app.getHttpServer())
+    .post('/api/sweets')
+    .set('Authorization', `Bearer ${jwtToken}`)
+    .send(newSweet);
+
+  const sweetId = createRes.body._id; // Get the ID of the new sweet
+
+  const updateData = {
+    price: 12.99,
+    quantity: 25,
+  };
+
+  // 2. Now, update that sweet
+  return request(app.getHttpServer())
+    .put(`/api/sweets/${sweetId}`) // The new endpoint
+    .set('Authorization', `Bearer ${jwtToken}`)
+    .send(updateData)
+    .expect(200) // Expect "OK"
+    .expect((res) => {
+      expect(res.body).toHaveProperty('price', 12.99);
+      expect(res.body).toHaveProperty('quantity', 25);
+      expect(res.body).toHaveProperty('name', 'Kaju Katli'); // Name should be unchanged
+    });
+});
 });

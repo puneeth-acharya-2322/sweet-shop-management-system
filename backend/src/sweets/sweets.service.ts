@@ -1,9 +1,10 @@
 // backend/src/sweets/sweets.service.ts
 
-import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose'; // <-- 1. Import
 import { Model } from 'mongoose'; // <-- 2. Import
 import { Sweet } from './schemas/sweet.schema'; // <-- 3. Import
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { UpdateSweetDto } from './dto/update-sweet.dto';
 
 @Injectable()
 export class SweetsService {
@@ -17,7 +18,20 @@ export class SweetsService {
   }
 
   async findAll(): Promise<Sweet[]> {
-  return this.sweetModel.find().exec();
+    return this.sweetModel.find().exec();
+  }
+  
+  async update(id: string, updateSweetDto: UpdateSweetDto): Promise<Sweet> {
+  const updatedSweet = await this.sweetModel.findByIdAndUpdate(
+    id,
+    updateSweetDto,
+    { new: true }, // This option returns the modified document
+  );
+
+  if (!updatedSweet) {
+    throw new NotFoundException(`Sweet with ID "${id}" not found`);
+  }
+  return updatedSweet;
 }
 
 async search(query: {
