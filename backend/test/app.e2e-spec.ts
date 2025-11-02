@@ -253,4 +253,43 @@ describe('Sweets API (e2e)', () => {
         expect(res.body).toHaveProperty('quantity', 9); // Quantity should decrease by 1
       });
   });
+
+  // --- Our New "Red" Tests for POST /api/sweets/:id/restock ---
+
+it('should BLOCK a non-admin from restocking a sweet (POST /api/sweets/:id/restock)', async () => {
+  // 1. Create a sweet
+  const createRes = await request(app.getHttpServer())
+    .post('/api/sweets')
+    .set('Authorization', `Bearer ${adminToken}`) // Admin creates
+    .send({ name: 'Rasmalai', category: 'Milk', price: 9, quantity: 0 });
+  const sweetId = createRes.body._id;
+
+  // 2. Try to restock as a REGULAR USER
+  return request(app.getHttpServer())
+    .post(`/api/sweets/${sweetId}/restock`)
+    .set('Authorization', `Bearer ${userToken}`) // <-- Use user token
+    .send({ quantity: 50 })
+    .expect(403); // Expect "Forbidden"
+});
+
+it('should allow an ADMIN to restock a sweet (POST /api/sweets/:id/restock)', async () => {
+  // 1. Create a sweet
+  const createRes = await request(app.getHttpServer())
+    .post('/api/sweets')
+    .set('Authorization', `Bearer ${adminToken}`) // Admin creates
+    .send({ name: 'Soan Papdi', category: 'Flaky', price: 6, quantity: 10 });
+  const sweetId = createRes.body._id;
+
+  // 2. Try to restock as an ADMIN
+  return request(app.getHttpServer())
+    .post(`/api/sweets/${sweetId}/restock`)
+    .set('Authorization', `Bearer ${adminToken}`) // <-- Use admin token
+    .send({ quantity: 50 }) // Send the new quantity
+    .expect(200) // This will fail 404
+    .expect((res) => {
+      expect(res.body).toHaveProperty('name', 'Soan Papdi');
+      expect(res.body).toHaveProperty('quantity', 60); // 10 + 50
+    });
+});
+
 });

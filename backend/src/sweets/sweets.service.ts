@@ -5,6 +5,7 @@ import { Model } from 'mongoose'; // <-- 2. Import
 import { Sweet } from './schemas/sweet.schema'; // <-- 3. Import
 import { Injectable, NotFoundException,BadRequestException, } from '@nestjs/common';
 import { UpdateSweetDto } from './dto/update-sweet.dto';
+import { RestockSweetDto } from './dto/restock-sweet.dto';
 
 @Injectable()
 export class SweetsService {
@@ -86,6 +87,18 @@ async purchase(id: string): Promise<Sweet> {
   }
 
   sweet.quantity -= 1;
+  return sweet.save();
+}
+
+async restock(id: string, restockSweetDto: RestockSweetDto): Promise<Sweet> {
+  const sweet = await this.sweetModel.findById(id);
+
+  if (!sweet) {
+    throw new NotFoundException(`Sweet with ID "${id}" not found`);
+  }
+
+  // Add the new quantity to the existing quantity
+  sweet.quantity += restockSweetDto.quantity;
   return sweet.save();
 }
 

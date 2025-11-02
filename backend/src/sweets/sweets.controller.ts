@@ -20,6 +20,7 @@ import { UpdateSweetDto } from './dto/update-sweet.dto';
 import { Roles } from '../auth/decorators/roles.decorator'; // <-- 2. Import Roles
 import { UserRole } from '../auth/schemas/user.schema'; // <-- 3. Import UserRole
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { RestockSweetDto } from './dto/restock-sweet.dto';
 
 @Controller('api/sweets')
 @UseGuards(AuthGuard()) // <-- 3. Add this guard
@@ -63,6 +64,17 @@ export class SweetsController {
     // This endpoint is protected by the class-level AuthGuard
     // but does not require Admin role
     return this.sweetsService.purchase(id);
+  }
+
+  @Post(':id/restock')
+  @UseGuards(RolesGuard) // <-- Apply the RolesGuard
+  @Roles(UserRole.ADMIN) // <-- Set required role to ADMIN
+  @HttpCode(HttpStatus.OK) // Set response code to 200
+  restock(
+    @Param('id') id: string,
+    @Body() restockSweetDto: RestockSweetDto,
+  ) {
+    return this.sweetsService.restock(id, restockSweetDto);
   }
 
 }
