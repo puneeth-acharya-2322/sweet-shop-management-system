@@ -4,6 +4,11 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 
+export enum UserRole {
+  USER = 'user',
+  ADMIN = 'admin',
+}
+
 @Schema()
 export class User extends Document {
   @Prop({ required: true, unique: true })
@@ -12,7 +17,8 @@ export class User extends Document {
   @Prop({ required: true })
   password: string;
 
-  // We can add more fields here later, like 'role'
+  @Prop({ type: String, enum: UserRole, default: UserRole.USER })
+  role: UserRole;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

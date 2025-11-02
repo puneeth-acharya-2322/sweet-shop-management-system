@@ -20,7 +20,7 @@ export class SweetsService {
   async findAll(): Promise<Sweet[]> {
     return this.sweetModel.find().exec();
   }
-  
+
   async update(id: string, updateSweetDto: UpdateSweetDto): Promise<Sweet> {
   const updatedSweet = await this.sweetModel.findByIdAndUpdate(
     id,
@@ -64,4 +64,14 @@ async search(query: {
 
   return this.sweetModel.find(filter).exec();
 }
+
+async remove(id: string): Promise<Sweet> {
+  const deletedSweet = await this.sweetModel.findByIdAndDelete(id);
+
+  if (!deletedSweet) {
+    throw new NotFoundException(`Sweet with ID "${id}" not found`);
+  }
+  return deletedSweet;
+}
+
 }

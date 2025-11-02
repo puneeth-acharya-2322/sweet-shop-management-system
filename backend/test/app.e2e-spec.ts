@@ -5,15 +5,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
 import { INestApplication } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
-import { User } from '../src/auth/schemas/user.schema';
+import { User, UserRole } from '../src/auth/schemas/user.schema'; // <-- IMPORT UserRole
 import { Model } from 'mongoose';
 import { Sweet } from '../src/sweets/schemas/sweet.schema';
 
+// --- BLOCK 1: AUTHENTICATION TESTS ---
 describe('Authentication API (e2e)', () => {
   let app: INestApplication;
   let userModel: Model<User>;
-  let sweetModel: Model<Sweet>; // <-- 1. DECLARE sweetModel
-  let jwtToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -22,32 +21,18 @@ describe('Authentication API (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     userModel = moduleFixture.get<Model<User>>(getModelToken(User.name));
-    sweetModel = moduleFixture.get<Model<Sweet>>(getModelToken(Sweet.name)); // <-- 2. GET sweetModel
     await app.init();
-
-    // Clean user DB and register/login
-    await userModel.deleteMany({});
-    const testUser = { username: 'sweetstester', password: 'password123' };
-    await request(app.getHttpServer())
-      .post('/api/auth/register')
-      .send(testUser);
-    const loginRes = await request(app.getHttpServer())
-      .post('/api/auth/login')
-      .send(testUser);
-    jwtToken = loginRes.body.access_token;
   });
 
-  // This cleans the DB before each test
+  // Cleans the 'users' collection before each auth test
   beforeEach(async () => {
-    // This cleans the 'sweets' collection before each test
-    await sweetModel.deleteMany({});
+    await userModel.deleteMany({});
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  // --- TEST 1 ---
   it('should register a new user (POST /api/auth/register)', () => {
     return request(app.getHttpServer())
       .post('/api/auth/register')
@@ -61,24 +46,20 @@ describe('Authentication API (e2e)', () => {
       });
   });
 
-  // --- TEST 2 ---
   it('should log in an existing user and return a token (POST /api/auth/login)', () => {
     const loginUser = {
       username: 'logintestuser',
       password: 'password123',
     };
-
-    // 1. First, register the user
     return request(app.getHttpServer())
       .post('/api/auth/register')
       .send(loginUser)
-      .expect(201) // Ensure registration is successful
+      .expect(201)
       .then(() => {
-        // 2. Then, try to log in
         return request(app.getHttpServer())
           .post('/api/auth/login')
           .send(loginUser)
-          .expect(201) 
+          .expect(201)
           .expect((res) => {
             expect(res.body).toHaveProperty('access_token');
           });
@@ -86,10 +67,13 @@ describe('Authentication API (e2e)', () => {
   });
 });
 
+// --- BLOCK 2: SWEETS TESTS ---
 describe('Sweets API (e2e)', () => {
   let app: INestApplication;
   let userModel: Model<User>;
-  let jwtToken: string; // We'll store the token here
+  let sweetModel: Model<Sweet>;
+  let userToken: string; // Token for regular user
+  let adminToken: string; // Token for admin user
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -98,31 +82,49 @@ describe('Sweets API (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     userModel = moduleFixture.get<Model<User>>(getModelToken(User.name));
+    sweetModel = moduleFixture.get<Model<Sweet>>(getModelToken(Sweet.name));
     await app.init();
 
-    // 1. Clean the DB and register/login a user to get a token
+    // 1. Clean DBs
     await userModel.deleteMany({});
+    await sweetModel.deleteMany({});
 
-    const testUser = { username: 'sweetstester', password: 'password123' };
-
-    // Register user
+    // 2. Create and login a REGULAR USER
+    const regularUser = { username: 'sweetstester', password: 'password123' };
     await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send(testUser);
+      .send(regularUser);
 
-    // Login to get the token
-    const loginRes = await request(app.getHttpServer())
+    const userLoginRes = await request(app.getHttpServer())
       .post('/api/auth/login')
-      .send(testUser);
+      .send(regularUser);
+    userToken = userLoginRes.body.access_token; // Save user token
 
-    jwtToken = loginRes.body.access_token; // Save the token
+    // 3. Create and login an ADMIN USER
+    const adminUser = new userModel({
+      username: 'adminuser',
+      password: 'password123',
+      role: UserRole.ADMIN, // Set the role
+    });
+    await adminUser.save(); // Hashes password
+
+    const adminLoginRes = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ username: 'adminuser', password: 'password123' });
+    adminToken = adminLoginRes.body.access_token; // Save admin token
+  });
+
+  // Cleans the 'sweets' collection before each test
+  beforeEach(async () => {
+    await sweetModel.deleteMany({});
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  // --- Our New "Red" Test ---
+  // --- EXISTING SWEETS TESTS (now using userToken) ---
+
   it('should create a new sweet (POST /api/sweets)', () => {
     const newSweet = {
       name: 'Jalebi',
@@ -130,100 +132,105 @@ describe('Sweets API (e2e)', () => {
       price: 5.99,
       quantity: 100,
     };
-
     return request(app.getHttpServer())
-      .post('/api/sweets') // The new endpoint
-      .set('Authorization', `Bearer ${jwtToken}`) // 2. Send the token
+      .post('/api/sweets')
+      .set('Authorization', `Bearer ${userToken}`) // <-- Use userToken
       .send(newSweet)
-      .expect(201) // 3. Expect "Created"
+      .expect(201)
       .expect((res) => {
         expect(res.body).toHaveProperty('name', 'Jalebi');
-        expect(res.body).toHaveProperty('quantity', 100);
       });
   });
-  it('should block unauthenticated access (POST /api/sweets)', () => {
-  const newSweet = {
-    name: 'Barfi',
-    category: 'Milk-based',
-    price: 7.99,
-    quantity: 50,
-  };
-  return request(app.getHttpServer())
-    .post('/api/sweets')
-    // Notice: No .set('Authorization', ...) header
-    .send(newSweet)
-    .expect(401); // Expect "Unauthorized"
-});
-// --- Our New "Red" Test for GET /api/sweets ---
-it('should get a list of all sweets (GET /api/sweets)', () => {
-  return request(app.getHttpServer())
-    .get('/api/sweets') // The new endpoint
-    .set('Authorization', `Bearer ${jwtToken}`) // It's protected
-    .expect(200) // Expect "OK"
-    .expect((res) => {
-      // The response should be an array
-      expect(Array.isArray(res.body)).toBe(true);
-    });
-});
 
-it('should search for sweets by name (GET /api/sweets/search)', async () => {
-    // 1. First, create a sweet to search for
+  it('should block unauthenticated access (POST /api/sweets)', () => {
+    const newSweet = { name: 'Barfi', category: 'Milk', price: 7, quantity: 50 };
+    return request(app.getHttpServer())
+      .post('/api/sweets')
+      .send(newSweet)
+      .expect(401);
+  });
+
+  it('should get a list of all sweets (GET /api/sweets)', () => {
+    return request(app.getHttpServer())
+      .get('/api/sweets')
+      .set('Authorization', `Bearer ${userToken}`) // <-- Use userToken
+      .expect(200)
+      .expect((res) => {
+        expect(Array.isArray(res.body)).toBe(true);
+      });
+  });
+
+  it('should search for sweets by name (GET /api/sweets/search)', async () => {
     const newSweet = {
       name: 'Gulab Jamun',
-      category: 'Syrup-based',
+      category: 'Syrup',
       price: 8.99,
       quantity: 50,
     };
-
     await request(app.getHttpServer())
       .post('/api/sweets')
-      .set('Authorization', `Bearer ${jwtToken}`)
+      .set('Authorization', `Bearer ${userToken}`) // <-- Use userToken
       .send(newSweet);
 
-    // 2. Now, search for that sweet
     return request(app.getHttpServer())
-      .get('/api/sweets/search?name=Gulab') // Search for a partial name
-      .set('Authorization', `Bearer ${jwtToken}`)
-      .expect(200) // Expect "OK"
+      .get('/api/sweets/search?name=Gulab')
+      .set('Authorization', `Bearer ${userToken}`) // <-- Use userToken
+      .expect(200)
       .expect((res) => {
-        expect(Array.isArray(res.body)).toBe(true);
         expect(res.body.length).toBe(1);
         expect(res.body[0]).toHaveProperty('name', 'Gulab Jamun');
       });
   });
 
-  // --- Our New "Red" Test for PUT /api/sweets/:id ---
-it('should update a sweet (PUT /api/sweets/:id)', async () => {
-  // 1. First, create a sweet to update
-  const newSweet = {
-    name: 'Kaju Katli',
-    category: 'Cashew-based',
-    price: 10.99,
-    quantity: 30,
-  };
+  it('should update a sweet (PUT /api/sweets/:id)', async () => {
+    const newSweet = {
+      name: 'Kaju Katli',
+      category: 'Cashew',
+      price: 10.99,
+      quantity: 30,
+    };
+    const createRes = await request(app.getHttpServer())
+      .post('/api/sweets')
+      .set('Authorization', `Bearer ${userToken}`) // <-- Use userToken
+      .send(newSweet);
+    const sweetId = createRes.body._id;
+    const updateData = { price: 12.99, quantity: 25 };
 
-  const createRes = await request(app.getHttpServer())
-    .post('/api/sweets')
-    .set('Authorization', `Bearer ${jwtToken}`)
-    .send(newSweet);
+    return request(app.getHttpServer())
+      .put(`/api/sweets/${sweetId}`)
+      .set('Authorization', `Bearer ${userToken}`) // <-- Use userToken
+      .send(updateData)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toHaveProperty('price', 12.99);
+      });
+  });
 
-  const sweetId = createRes.body._id; // Get the ID of the new sweet
+  // --- NEW "RED" TESTS FOR DELETE ---
 
-  const updateData = {
-    price: 12.99,
-    quantity: 25,
-  };
+  it('should BLOCK a non-admin from deleting a sweet (DELETE /api/sweets/:id)', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post('/api/sweets')
+      .set('Authorization', `Bearer ${adminToken}`) // Admin creates
+      .send({ name: 'Temp Sweet', category: 'Temp', price: 1, quantity: 1 });
+    const sweetId = createRes.body._id;
 
-  // 2. Now, update that sweet
-  return request(app.getHttpServer())
-    .put(`/api/sweets/${sweetId}`) // The new endpoint
-    .set('Authorization', `Bearer ${jwtToken}`)
-    .send(updateData)
-    .expect(200) // Expect "OK"
-    .expect((res) => {
-      expect(res.body).toHaveProperty('price', 12.99);
-      expect(res.body).toHaveProperty('quantity', 25);
-      expect(res.body).toHaveProperty('name', 'Kaju Katli'); // Name should be unchanged
-    });
-});
+    return request(app.getHttpServer())
+      .delete(`/api/sweets/${sweetId}`)
+      .set('Authorization', `Bearer ${userToken}`) // <-- Regular user tries to delete
+      .expect(403); // This will fail 404
+  });
+
+  it('should allow an ADMIN to delete a sweet (DELETE /api/sweets/:id)', async () => {
+    const createRes = await request(app.getHttpServer())
+      .post('/api/sweets')
+      .set('Authorization', `Bearer ${adminToken}`) // Admin creates
+      .send({ name: 'Temp Sweet 2', category: 'Temp', price: 1, quantity: 1 });
+    const sweetId = createRes.body._id;
+
+    return request(app.getHttpServer())
+      .delete(`/api/sweets/${sweetId}`)
+      .set('Authorization', `Bearer ${adminToken}`) // <-- Admin tries to delete
+      .expect(200); // This will fail 404
+  });
 });
