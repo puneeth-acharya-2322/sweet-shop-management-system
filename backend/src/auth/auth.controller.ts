@@ -5,14 +5,19 @@ import { AuthService } from './auth.service'; // Make sure this is imported
 
 @Controller('api/auth')
 export class AuthController {
-  // This line "injects" the service so the controller can use it
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   register(@Body() body: any) {
-    // The controller's job is just to call the service.
-    // This is much cleaner!
     return this.authService.register(body);
+  }
+
+  
+  @Post('login')
+  @HttpCode(HttpStatus.CREATED) // We'll use 201 for consistency for now
+  login(@Body() body: any) {
+    // Call a 'login' service function that we will create next
+    return this.authService.login(body);
   }
 }

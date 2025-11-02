@@ -1,14 +1,24 @@
 // backend/src/auth/auth.service.ts
 
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException, 
+} from '@nestjs/common';
 import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
+import { JwtService } from '@nestjs/jwt'; // <-- 2. Import
+import * as bcrypt from 'bcrypt'; // <-- 3. Import
 
 @Injectable()
 export class AuthService {
   // 1. Inject the User model
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    private jwtService: JwtService, // <-- 5. Inject JwtService
+  ) {}
 
   async register(body: any) {
     // 2. We will use a DTO (Data Transfer Object) here later
@@ -32,5 +42,24 @@ export class AuthService {
       }
       throw error;
     }
+  }
+  async login(body: any) {
+    // 1. Find the user by username
+    const user = await this.userModel.findOne({ username: body.username });
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // 2. Compare passwords
+    const isMatch = await bcrypt.compare(body.password, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // 3. Generate and return JWT
+    const payload = { sub: user._id, username: user.username };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
   }
 }
