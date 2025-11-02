@@ -1,42 +1,241 @@
+/* frontend/src/App.css */
+
+/* === 1. ROOT & VARIABLES === */
+:root {
+  --primary-color: #007bff;
+  --primary-hover: #0056b3;
+  --danger-color: #dc3545;
+  --danger-hover: #a71d2a;
+  --success-color: #28a745;
+  --background-color: #1a1a1a;
+  --surface-color: #2a2a2a;
+  --text-color: #f0f0f0;
+  --text-muted: #aaa;
+  --border-color: #444;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* === 2. GLOBAL RESET & BODY === */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  color: var(--text-color);
+  background-color: var(--background-color);
+}
+
 #root {
-  max-width: 1280px;
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 1.5rem;
+}
+
+h1, h2, h3, h4 {
+  margin-bottom: 1rem;
+}
+
+h1 { font-size: 2.2rem; }
+h2 { font-size: 1.8rem; color: var(--primary-color); }
+h3 { font-size: 1.25rem; }
+
+/* === 3. BUTTONS (Re-usable) === */
+.btn {
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: var(--border-radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+.btn-primary:hover, .btn:hover {
+  background-color: var(--primary-hover);
+}
+.btn-primary:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+.btn-danger {
+  background-color: var(--danger-color);
+  color: white;
+}
+.btn-danger:hover {
+  background-color: var(--danger-hover);
+}
+.btn-secondary {
+  background-color: #5a5a5a;
+  color: white;
+}
+.btn-secondary:hover {
+  background-color: #7a7a7a;
+}
+.btn-link {
+  background-color: transparent;
+  border: none;
+  color: var(--primary-color);
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* === 4. NAVBAR === */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  margin-bottom: 2rem;
+}
+.navbar .logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+.navbar .user-info {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+.navbar .user-info span {
+  font-weight: 500;
+}
+.navbar .user-info .role-admin {
+  color: #ffc107;
+  font-weight: 700;
+}
+
+/* === 5. FORMS & CONTAINERS === */
+.form-container, .admin-section, .search-section {
+  width: 100%;
   padding: 2rem;
-  text-align: center;
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  margin-bottom: 2rem;
+}
+.form-container {
+  max-width: 500px;
+  margin: 4rem auto 0; /* Center login/register forms */
+}
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+form div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-align: left;
+}
+input[type="text"],
+input[type="password"],
+input[type="number"] {
+  width: 100%;
+  padding: 0.8rem;
+  font-size: 1rem;
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-color);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+/* === 6. PRODUCT GRID & CARDS === */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+.product-card {
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  overflow: hidden; /* For image */
+  display: flex;
+  flex-direction: column;
 }
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.card-image-placeholder {
+  height: 200px;
+  background-color: #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.card-body {
+  padding: 1.5rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+.card-body h3 {
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+.card-body .price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+}
+.card-body .category {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+.card-stock {
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.card-stock .in-stock {
+  color: var(--success-color);
+}
+.card-stock .out-of-stock {
+  color: var(--danger-color);
+}
+.card-actions {
+  margin-top: auto; /* Pushes buttons to the bottom */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.admin-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.admin-actions .btn {
+  flex: 1;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* === 7. UTILITY & MESSAGES === */
+.error {
+  color: var(--danger-color);
+  font-weight: 500;
+  margin-top: 0.5rem;
 }
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+.success {
+  color: var(--success-color);
+  font-weight: 500;
+  margin-top: 0.5rem;
 }
