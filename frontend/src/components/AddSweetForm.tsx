@@ -40,7 +40,7 @@ export function AddSweetForm({ onSweetAdded }: AddSweetFormProps) {
   };
 
   return (
-    <div className="App" style={{ backgroundColor: '#3a3a3a', margin: '2rem 0' }}>
+    <div className="App" style={{ backgroundColor: 'transparent', margin: '2rem 0' }}>
       <h3>Admin: Add New Sweet</h3>
       <form onSubmit={handleSubmit}>
         <div>
@@ -86,7 +86,7 @@ export function AddSweetForm({ onSweetAdded }: AddSweetFormProps) {
             required
           />
         </div>
-        <button type="submit">Add Sweet</button>
+        <button type="submit" className="btn btn-primary">Add Sweet</button>
         {error && <p className="error">{error}</p>}
       </form>
     </div>
