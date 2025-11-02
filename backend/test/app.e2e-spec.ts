@@ -7,10 +7,13 @@ import { INestApplication } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
 import { User } from '../src/auth/schemas/user.schema';
 import { Model } from 'mongoose';
+import { Sweet } from '../src/sweets/schemas/sweet.schema';
 
 describe('Authentication API (e2e)', () => {
   let app: INestApplication;
   let userModel: Model<User>;
+  let sweetModel: Model<Sweet>; // <-- 1. DECLARE sweetModel
+  let jwtToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -19,12 +22,25 @@ describe('Authentication API (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     userModel = moduleFixture.get<Model<User>>(getModelToken(User.name));
+    sweetModel = moduleFixture.get<Model<Sweet>>(getModelToken(Sweet.name)); // <-- 2. GET sweetModel
     await app.init();
+
+    // Clean user DB and register/login
+    await userModel.deleteMany({});
+    const testUser = { username: 'sweetstester', password: 'password123' };
+    await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send(testUser);
+    const loginRes = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send(testUser);
+    jwtToken = loginRes.body.access_token;
   });
 
   // This cleans the DB before each test
   beforeEach(async () => {
-    await userModel.deleteMany({});
+    // This cleans the 'sweets' collection before each test
+    await sweetModel.deleteMany({});
   });
 
   afterAll(async () => {
@@ -149,4 +165,31 @@ it('should get a list of all sweets (GET /api/sweets)', () => {
       expect(Array.isArray(res.body)).toBe(true);
     });
 });
+
+it('should search for sweets by name (GET /api/sweets/search)', async () => {
+    // 1. First, create a sweet to search for
+    const newSweet = {
+      name: 'Gulab Jamun',
+      category: 'Syrup-based',
+      price: 8.99,
+      quantity: 50,
+    };
+
+    await request(app.getHttpServer())
+      .post('/api/sweets')
+      .set('Authorization', `Bearer ${jwtToken}`)
+      .send(newSweet);
+
+    // 2. Now, search for that sweet
+    return request(app.getHttpServer())
+      .get('/api/sweets/search?name=Gulab') // Search for a partial name
+      .set('Authorization', `Bearer ${jwtToken}`)
+      .expect(200) // Expect "OK"
+      .expect((res) => {
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body.length).toBe(1);
+        expect(res.body[0]).toHaveProperty('name', 'Gulab Jamun');
+      });
+  });
+
 });

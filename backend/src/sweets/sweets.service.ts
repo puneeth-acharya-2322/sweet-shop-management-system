@@ -15,8 +15,39 @@ export class SweetsService {
     const newSweet = new this.sweetModel(sweetData);
     return newSweet.save();
   }
-  
+
   async findAll(): Promise<Sweet[]> {
   return this.sweetModel.find().exec();
+}
+
+async search(query: {
+  name?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}): Promise<Sweet[]> {
+  const filter: any = {};
+
+  if (query.name) {
+    // Use a case-insensitive regex to find partial matches
+    filter.name = { $regex: query.name, $options: 'i' };
+  }
+
+  if (query.category) {
+    filter.category = { $regex: query.category, $options: 'i' };
+  }
+
+  // Add price range logic
+  if (query.minPrice || query.maxPrice) {
+    filter.price = {};
+    if (query.minPrice) {
+      filter.price.$gte = query.minPrice;
+    }
+    if (query.maxPrice) {
+      filter.price.$lte = query.maxPrice;
+    }
+  }
+
+  return this.sweetModel.find(filter).exec();
 }
 }
