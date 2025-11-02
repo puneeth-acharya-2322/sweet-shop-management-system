@@ -15,4 +15,8 @@ export class SweetsService {
     const newSweet = new this.sweetModel(sweetData);
     return newSweet.save();
   }
+  
+  async findAll(): Promise<Sweet[]> {
+  return this.sweetModel.find().exec();
+}
 }

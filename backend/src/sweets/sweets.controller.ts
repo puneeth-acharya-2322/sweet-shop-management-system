@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards, // <-- 1. Import
+  Get,
 } from '@nestjs/common';
 import { SweetsService } from './sweets.service';
 import { AuthGuard } from '@nestjs/passport'; // <-- 2. Import
@@ -20,5 +21,10 @@ export class SweetsController {
   @HttpCode(HttpStatus.CREATED)
   create(@Body() body: any) {
     return this.sweetsService.create(body);
+  }
+  
+  @Get()
+  findAll() {
+    return this.sweetsService.findAll();
   }
 }

@@ -132,11 +132,21 @@ describe('Sweets API (e2e)', () => {
     price: 7.99,
     quantity: 50,
   };
-
   return request(app.getHttpServer())
     .post('/api/sweets')
     // Notice: No .set('Authorization', ...) header
     .send(newSweet)
     .expect(401); // Expect "Unauthorized"
+});
+// --- Our New "Red" Test for GET /api/sweets ---
+it('should get a list of all sweets (GET /api/sweets)', () => {
+  return request(app.getHttpServer())
+    .get('/api/sweets') // The new endpoint
+    .set('Authorization', `Bearer ${jwtToken}`) // It's protected
+    .expect(200) // Expect "OK"
+    .expect((res) => {
+      // The response should be an array
+      expect(Array.isArray(res.body)).toBe(true);
+    });
 });
 });
