@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config'; // <-- Import ConfigService
 import { MongooseModule } from '@nestjs/mongoose'; // <-- Import MongooseModule
+import { SweetsModule } from './sweets/sweets.module';
+
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { MongooseModule } from '@nestjs/mongoose'; // <-- Import MongooseModule
       inject: [ConfigService],
     }),
     AuthModule,
+    SweetsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
